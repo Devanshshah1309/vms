@@ -1,16 +1,17 @@
 import cv2
 import numpy as np
 from enum import Enum
+import utils
 
-# Constants
-BLUR_KERNEL_SIZE = (5, 5)
-CANNY_MIN_THRESHOLD = 200
-CANNY_MAX_THRESHOLD = 300
-VIDEO_PATH = "Resources/Bowling strike.mp4"
-WINDOW_NAME = "Video Analysis"
+# default constants
+DEFAULT_BLUR_KERNEL_SIZE = (5, 5)
+DEFAULT_CANNY_MIN_THRESHOLD = 200
+DEFAULT_CANNY_MAX_THRESHOLD = 300
+DEFAULT_VIDEO_PATH = "Resources/Bowling strike.mp4"
+DEFAULT_WINDOW_NAME = "Video Analysis"
 END_OF_VIDEO = "No more frames left!"
-GRID_ROWS = 2
-GRID_COLS = 2
+DEFAULT_GRID_ROWS = 2
+DEFAULT_GRID_COLS = 2
 
 # define keybinding options
 class OPTIONS(Enum):
@@ -18,16 +19,14 @@ class OPTIONS(Enum):
     QUIT = ord('q')
     FULLSCREEN = ord('f')
 
-# set up video capture
-cap = cv2.VideoCapture(VIDEO_PATH)
-img_width, img_height  = cap.get(3), cap.get(4)
-
 # settings/control variables
 video_is_paused = False
 video_is_fullscreen = False
 video_is_ended = False
 
 def change_settings(key):
+    if key == -1: # -1 => no key pressed
+        return
     global video_is_paused, video_is_fullscreen, video_is_ended
     if key == OPTIONS.PAUSE_OR_PLAY.value:
         video_is_paused = not video_is_paused
@@ -38,48 +37,49 @@ def change_settings(key):
     else:
         print("Invalid key pressed")
         return
-    print("Settings changed")
-    print("Paused" if video_is_paused else "Playing")
-    print("Fullscreen" if video_is_fullscreen else "Not fullscreen")
+
+def handle_pause_play():
+    global video_is_paused
+    key = cv2.waitKey(0)
+    change_settings(key)
+    if video_is_ended:
+        return False
+    if key == OPTIONS.PAUSE_OR_PLAY.value:
+        return True
+    return handle_pause_play() # recursively call until valid key is pressed
 
 # main video manipulation loop
-while True:
-    if video_is_paused:
-        key = cv2.waitKey(0)
-        if key == OPTIONS.QUIT.value:
-            break
-        if key == OPTIONS.PAUSE_OR_PLAY.value:
-            video_is_paused = False
-        else:
-            continue
-    success, img = cap.read()
-    if not success:
-        print(END_OF_VIDEO)
-        break
-    if video_is_fullscreen:
-        print("Entered full screen mode")
-        img = cv2.resize(img, (int(img_width) * GRID_COLS, int(img_height) * GRID_ROWS))
-        cv2.imshow(WINDOW_NAME, img)
-    else:
-        imgGray = cv2.cvtColor(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
-        imgBlur = cv2.GaussianBlur(img, BLUR_KERNEL_SIZE, 0)
-        imgEdgeDetect = cv2.cvtColor(cv2.Canny(img, CANNY_MIN_THRESHOLD, CANNY_MAX_THRESHOLD), cv2.COLOR_GRAY2BGR)
-        all = np.concatenate((np.concatenate((img, imgGray), axis=1), np.concatenate((imgBlur, imgEdgeDetect), axis=1)), axis=0)
-        cv2.imshow(WINDOW_NAME, all)
-    key = cv2.waitKey(1)
-    if key == OPTIONS.QUIT.value:
-        break
-    if key == OPTIONS.PAUSE_OR_PLAY.value:
-        video_is_paused = not video_is_paused
-        key = cv2.waitKey(-1)
-        if key == OPTIONS.QUIT.value:
-            break
-        if key == OPTIONS.PAUSE_OR_PLAY.value:
-            video_is_paused = not video_is_paused
-            continue
-    elif key == OPTIONS.FULLSCREEN.value:
-        video_is_fullscreen = not video_is_fullscreen
 
-# clean up
-cv2.destroyAllWindows()
-cap.release()
+def process_video(video_path = DEFAULT_VIDEO_PATH):
+    cap = cv2.VideoCapture(video_path)
+    while True:
+        if video_is_paused:
+            handle_pause_play()
+        if video_is_ended:
+            break
+        success, img = cap.read()
+        display_image = None
+        if not success:
+            print("End of Video!")
+            break
+        if video_is_fullscreen:
+            display_image = utils.get_fullscreen_image(img, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS)
+        else:
+            display_image = utils.get_gray_blur_edgedetect_image(img, DEFAULT_BLUR_KERNEL_SIZE,
+                                DEFAULT_CANNY_MIN_THRESHOLD, DEFAULT_CANNY_MAX_THRESHOLD)
+        
+        utils.show(display_image, DEFAULT_WINDOW_NAME)
+        
+        key = cv2.waitKey(1)
+        change_settings(key)
+    # clean up
+    cv2.destroyAllWindows()
+    cap.release()
+
+if __name__ == "__main__":
+    print("-" * 20)
+    print("Welcome to Devansh's Video Manipulation System!")
+    print("-" * 20)
+    video_path = input("Enter your video's path: ")
+    if video_path == "": process_video()
+    else: process_video(video_path)
