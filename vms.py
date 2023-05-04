@@ -7,24 +7,29 @@ import utils
 DEFAULT_BLUR_KERNEL_SIZE = (5, 5)
 DEFAULT_CANNY_MIN_THRESHOLD = 200
 DEFAULT_CANNY_MAX_THRESHOLD = 300
-DEFAULT_VIDEO_PATH = "Resources/Bowling strike.mp4"
+DEFAULT_VIDEO_PATH = "Resources/2022 Reel.mp4"
 DEFAULT_WINDOW_NAME = "Video Analysis"
 END_OF_VIDEO = "No more frames left!"
 DEFAULT_GRID_ROWS = 2
 DEFAULT_GRID_COLS = 2
+DEFAULT_REWIND_FAST_FORWARD_SECONDS = 5
 
 # define keybinding options
 class OPTIONS(Enum):
     PAUSE_OR_PLAY = ord(' ') 
     QUIT = ord('q')
     FULLSCREEN = ord('f')
+    REWIND = ord('a')
+    FAST_FORWARD = ord('d')
 
 # settings/control variables
 video_is_paused = False
 video_is_fullscreen = False
 video_is_ended = False
 
-def change_settings(key):
+def change_settings(cap, key):
+    # rewind and fast forward are handled in the main loop because they affect the video itself
+    # not just the display
     if key == -1: # -1 => no key pressed
         return
     global video_is_paused, video_is_fullscreen, video_is_ended
@@ -35,7 +40,6 @@ def change_settings(key):
     elif key == OPTIONS.QUIT.value:
         video_is_ended = True
     else:
-        print("Invalid key pressed")
         return
 
 def handle_pause_play():
@@ -48,10 +52,15 @@ def handle_pause_play():
         return True
     return handle_pause_play() # recursively call until valid key is pressed
 
-# main video manipulation loop
+def get_frames_offset(fps):
+    return fps * DEFAULT_REWIND_FAST_FORWARD_SECONDS
 
+
+# main video manipulation loop
 def process_video(video_path = DEFAULT_VIDEO_PATH):
     cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    current_frame = 0
     while True:
         if video_is_paused:
             handle_pause_play()
@@ -71,7 +80,17 @@ def process_video(video_path = DEFAULT_VIDEO_PATH):
         utils.show(display_image, DEFAULT_WINDOW_NAME)
         
         key = cv2.waitKey(1)
-        change_settings(key)
+        change_settings(cap, key)
+
+        # handle rewind and fast forward
+        if key == OPTIONS.REWIND.value:
+            offset = get_frames_offset(fps)
+            current_frame = max(0, current_frame - offset)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+        elif key == OPTIONS.FAST_FORWARD.value:
+            offset = get_frames_offset(fps)
+            current_frame = min(cap.get(cv2.CAP_PROP_FRAME_COUNT), current_frame + offset)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
     # clean up
     cv2.destroyAllWindows()
     cap.release()
