@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from enum import Enum
 import utils
+import logging
 
 # default constants
 DEFAULT_BLUR_KERNEL_SIZE = (5, 5)
@@ -15,31 +16,37 @@ DEFAULT_GRID_COLS = 2
 DEFAULT_REWIND_FAST_FORWARD_SECONDS = 5
 
 # define keybinding options
-class OPTIONS(Enum):
+class Options(Enum):
     PAUSE_OR_PLAY = ord(' ') 
     QUIT = ord('q')
     FULLSCREEN = ord('f')
     REWIND = ord('a')
     FAST_FORWARD = ord('d')
 
+logging.basicConfig(level=logging.DEBUG)
+
 # settings/control variables
 video_is_paused = False
 video_is_fullscreen = False
 video_is_ended = False
 
-def change_settings(cap, key):
+def change_settings(key):
     # rewind and fast forward are handled in the main loop because they affect the video itself
     # not just the display
     if key == -1: # -1 => no key pressed
         return
     global video_is_paused, video_is_fullscreen, video_is_ended
-    if key == OPTIONS.PAUSE_OR_PLAY.value:
+    if key == Options.PAUSE_OR_PLAY.value:
+        logging.info("Toggling pause/play.")
         video_is_paused = not video_is_paused
-    elif key == OPTIONS.FULLSCREEN.value:
+    elif key == Options.FULLSCREEN.value:
+        logging.info("Toggling fullscreen.")
         video_is_fullscreen = not video_is_fullscreen
-    elif key == OPTIONS.QUIT.value:
+    elif key == Options.QUIT.value:
+        logging.info("Ending video.")
         video_is_ended = True
     else:
+        logging.warning("Invalid key pressed.")
         return
 
 def handle_pause_play():
@@ -48,7 +55,7 @@ def handle_pause_play():
     change_settings(key)
     if video_is_ended:
         return False
-    if key == OPTIONS.PAUSE_OR_PLAY.value:
+    if key == Options.PAUSE_OR_PLAY.value:
         return True
     return handle_pause_play() # recursively call until valid key is pressed
 
@@ -59,6 +66,7 @@ def get_frames_offset(fps):
 # main video manipulation loop
 def process_video(video_path = DEFAULT_VIDEO_PATH):
     cap = cv2.VideoCapture(video_path)
+    logging.info("Video opened successfully.")
     fps = cap.get(cv2.CAP_PROP_FPS)
     current_frame = 0
     while True:
@@ -80,18 +88,21 @@ def process_video(video_path = DEFAULT_VIDEO_PATH):
         utils.show(display_image, DEFAULT_WINDOW_NAME)
         
         key = cv2.waitKey(1)
-        change_settings(cap, key)
+        change_settings(key)
 
         # handle rewind and fast forward
-        if key == OPTIONS.REWIND.value:
+        if key == Options.REWIND.value:
+            logging.info("Rewinding.")
             offset = get_frames_offset(fps)
             current_frame = max(0, current_frame - offset)
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
-        elif key == OPTIONS.FAST_FORWARD.value:
+        elif key == Options.FAST_FORWARD.value:
+            logging.info("Fast forwarding.")
             offset = get_frames_offset(fps)
             current_frame = min(cap.get(cv2.CAP_PROP_FRAME_COUNT), current_frame + offset)
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
     # clean up
+    logging.info("Cleaning up.")
     cv2.destroyAllWindows()
     cap.release()
 
