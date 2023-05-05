@@ -116,7 +116,6 @@ def process_video(video_path: str = DEFAULT_VIDEO_PATH) -> None:
     fps: float = cap.get(cv2.CAP_PROP_FPS)
     current_frame: int = 0
     while True:
-        print(current_frame)
         if video_is_paused:
             handle_pause_play()
         if video_is_ended:

@@ -1,15 +1,29 @@
-# Video Management System (VMS)
+# :camera: Video Management System (VMS)
 
-### Dependencies
+## Dependencies
 
 - `opencv-python`
 - `numpy`
 
-### Features
+## Examples
+
+### Grid View
+
+![grid](Resources/grid.png)
+
+### Edge Detection (Full Screen)
+
+![edgedetect](Resources/edgedetect.png)
+
+### Grayscale (Full Screen)
+
+![grayscale](Resources/grayscale.png)
+
+## Features
 
 The VMS is designed to allow users to process videos using the keyboard (for efficiency purposes). All the commands are made as intuitive as possible by using commonly used key-bindings.
 
-When the application starts, the user is prompted for a path to the file, which is then opened and a `2 x 2` grid of video streams are shown - original, blurred, edge detection and grayscale.
+When the application starts, the user is prompted for a path to the file, which is then opened and a `2 x 2` grid of video streams are shown - original, grayscale, blurred, and edge detection.
 
 The following are the features:
 
@@ -30,7 +44,7 @@ The code is divided into 3 files - `utils.py`, `vms.py` and `constants.py`.
 
 ### Design Decisions
 
-This section explains some of the thought-processes I had when designing this application - please feel free to reach out in case you have any other questions :)
+This section explains some of the thought-processes I had when designing this application - please feel free to reach out in case you have any other questions :smile:
 
 - Rewinding and forwarding is allowed only for a fixed number of seconds - This is similar to many applications such as YouTube, Netflix, etc. and hence is quite intuitive to use. It would be quite simple to allow the user to enter the number of seconds to rewind/forward by at the start and use that value dynamically, but I felt this wasn't that important because it's possible to rewind/forward by a larger amount by pressing the key multiple times, if it's really needed.
 - "Fullscreen Mode" only fills up original window size - I felt this would make more sense rather than forcing the entire window size to fill up the monitor size and then the video to fill the window. Also, `opencv` does not provide a neat way to do this (i.e., to access the current window size), at least to my best knowledge.
