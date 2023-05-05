@@ -1,46 +1,18 @@
 import cv2
-from enum import Enum
 import utils
 import logging
+from constants import *
 
-# default constants
-DEFAULT_BLUR_KERNEL_SIZE = (5, 5)
-DEFAULT_CANNY_MIN_THRESHOLD = 200
-DEFAULT_CANNY_MAX_THRESHOLD = 300
-DEFAULT_VIDEO_PATH = "Resources/2022 Reel.mp4"
-DEFAULT_WINDOW_NAME = "Video Analysis"
-END_OF_VIDEO = "No more frames left!"
-DEFAULT_GRID_ROWS = 2
-DEFAULT_GRID_COLS = 2
-DEFAULT_REWIND_FAST_FORWARD_SECONDS = 5
-
-# define keybinding options
-class Options(Enum):
-    PAUSE_OR_PLAY = ord(' ') 
-    QUIT = ord('q')
-    FULLSCREEN = ord('f')
-    REWIND = ord('a')
-    FAST_FORWARD = ord('d')
-    FULLSCREEN_ORIGINAL = ord('1')
-    FULLSCREEN_GRAYSCALE = ord('2')
-    FULLSCREEN_BLUR = ord('3')
-    FULLSCREEN_EDGE_DETECT = ord('4')
-
-class FullScreenMode(Enum):
-    ORIGINAL = 0
-    GRAYSCALE = 1
-    BLUR = 2
-    EDGE_DETECT = 3
 
 logging.basicConfig(level=logging.DEBUG)
 
 # settings/control variables
-video_is_paused = False
-video_is_fullscreen = False
-video_is_ended = False
-fullscreen_mode = FullScreenMode.ORIGINAL
+video_is_paused: bool = False
+video_is_fullscreen: bool = False
+video_is_ended: bool = False
+fullscreen_mode: FullScreenMode = FullScreenMode.ORIGINAL
 
-def change_settings(key):
+def change_settings(key) -> None:
     # rewind and fast forward are handled in the main loop because they affect the video itself
     # not just the display
     if key == -1: # -1 => no key pressed
@@ -75,14 +47,18 @@ def change_settings(key):
         logging.warning("Invalid key pressed.")
         return
 
-def handle_pause_play():
+def handle_pause_play() -> None:
+    """Handles the pause/play functionality of the video.
+
+    Note: When the video is paused, it must be resumed again by pressing the spacebar before any other chanes (e.g. fullscreen mode) can be reflected. That is, in paused state, the video can only be quit or resumed.
+    """
     global video_is_paused
     key = cv2.waitKey(0)
     change_settings(key)
     if video_is_ended:
-        return False
+        return
     if key == Options.PAUSE_OR_PLAY.value:
-        return True
+        return
     return handle_pause_play() # recursively call until valid key is pressed
 
 def handle_fullscreen_mode_image(img, fullscreen_mode):
@@ -97,21 +73,27 @@ def handle_fullscreen_mode_image(img, fullscreen_mode):
     return utils.get_fullscreen_image(img, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS)
 
 def get_frames_offset(fps):
-    return fps * DEFAULT_REWIND_FAST_FORWARD_SECONDS
+    return int(fps * DEFAULT_REWIND_FAST_FORWARD_SECONDS)
 
+def start() -> None:
+    print("-" * 20)
+    print("Welcome to Devansh's Video Manipulation System!")
+    print("-" * 20)
 
 # main video manipulation loop
-def process_video(video_path = DEFAULT_VIDEO_PATH):
+def process_video(video_path = DEFAULT_VIDEO_PATH) -> None:
     cap = cv2.VideoCapture(video_path)
     logging.info("Video opened successfully.")
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    current_frame = 0
+    fps: float = cap.get(cv2.CAP_PROP_FPS)
+    current_frame: int = 0
     while True:
+        print(current_frame)
         if video_is_paused:
             handle_pause_play()
         if video_is_ended:
             break
         success, img = cap.read()
+        current_frame += 1
         display_image = None
         if not success:
             print("End of Video!")
@@ -130,12 +112,12 @@ def process_video(video_path = DEFAULT_VIDEO_PATH):
         # handle rewind and fast forward
         if key == Options.REWIND.value:
             logging.info("Rewinding.")
-            offset = get_frames_offset(fps)
+            offset: int = get_frames_offset(fps)
             current_frame = max(0, current_frame - offset)
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
         elif key == Options.FAST_FORWARD.value:
             logging.info("Fast forwarding.")
-            offset = get_frames_offset(fps)
+            offset: int = get_frames_offset(fps)
             current_frame = min(cap.get(cv2.CAP_PROP_FRAME_COUNT), current_frame + offset)
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
     # clean up
@@ -144,9 +126,9 @@ def process_video(video_path = DEFAULT_VIDEO_PATH):
     cap.release()
 
 if __name__ == "__main__":
-    print("-" * 20)
-    print("Welcome to Devansh's Video Manipulation System!")
-    print("-" * 20)
+    start()
     video_path = input("Enter your video's path: ")
-    if video_path == "": process_video()
-    else: process_video(video_path)
+    if video_path == "": # use default value (from constants.py)
+        process_video()
+    else:
+        process_video(video_path)
