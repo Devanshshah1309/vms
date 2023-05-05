@@ -22,10 +22,11 @@ The following are the features:
 
 ## Developer Guide
 
-The code is divided into 2 files - `utils.py` and `vms.py`.
+The code is divided into 3 files - `utils.py`, `vms.py` and `constants.py`.
 
 - `utils.py`: contains all the `cv2`-related code (image processing, stacking images, resizing images, etc.) so that we maintain a clean abstraction between the logic of the code and the underlying implementation
 - `vms.py`: contains the actual business logic of the main program.
+- `constants.py`: contains the constants (default values, enums, etc.) used in the application.
 
 ### Design Decisions
 
@@ -33,7 +34,8 @@ The code is divided into 2 files - `utils.py` and `vms.py`.
 - "Fullscreen Mode" only fills up original window size - I felt this would make more sense rather than forcing the entire window size to fill up the monitor size and then the video to fill the window. Also, `opencv` does not provide a neat way to do this (i.e., to access the current window size), at least to my best knowledge.
 - Logging is done for easy debugging and tracking errors
 - Using named constants is always better than using magic numbers as it makes code easier to read and understand (even for myself later). This can be seen in the `vms.py` code as well.
-- Although global variables are generally not a good practice, here, they can be used since they manage the state of the application and are closely coupled with the logic of the program too.
+- We use type hints in python as much as possible to make it easier to reason about code (mainly used in `utils.py`) and reduce the possibility of type-related bugs
+- Although global variables are generally not a good practice, here, they can be used since they manage the state of the application and are closely coupled with the logic of the program too. An alternative would be to use the return values from functions to change the state but that would get quite messy too (e.g. if the `change_settings` function returns a `2`, change `video_is_ended` to `True`, etc.) - however, it would allow us to move all these functions to a separate file, further increasing modularity. The trade-off made here was to allow more coupling in order to reduce complexity. This would have to be reconsidered while scaling the system.
 - I've tried to modularise the code as much as possible by abstracting the common logic into functions to make it easier to add new functionality to this VMS (e.g. the `change_settings` and `handle_pause_play` functions). Adding a new functionality would just involve creating a new handler for that command and including it in the `change_settings` (or wherever appropriate, depending on the actual implementation).
 - A good way to further improve abstraction (a possible extenstion) by using Object Oriented Programming (OOP) would be to create a `VMS` class and store all the video related information inside it (including file path, current settings, etc). I eventually decided not to do this because the current code is at a sufficient level of abstraction for its size. In future, if more features were to be added, this could be a possible consideration - since the logic itself remains intact, the refactoring wouldn't be too difficult.
 - Currently only 1 video input is supported (with 3 extra streams created for it) but it would be possible to support multiple video inputs. A possible way to do this would be to arrange all 4 streams for each input video in a row and then just stack all the streams for different videos on top of each other (i.e., the grid would be `n x 4` where `n` is the number of video inputs)
