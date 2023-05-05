@@ -1,6 +1,7 @@
 import cv2
 import utils
 import logging
+from utils import Image
 from constants import *
 
 
@@ -13,8 +14,13 @@ video_is_ended: bool = False
 fullscreen_mode: FullScreenMode = FullScreenMode.ORIGINAL
 
 def change_settings(key) -> None:
-    # rewind and fast forward are handled in the main loop because they affect the video itself
-    # not just the display
+    """Performs the appropriate action based on the key pressed.
+
+    Note: This function does not handle the rewind and fast forward functionality. That is handled in the main loop because it affects the video itself, not just the display.
+
+    Args:
+        key (Any): The key pressed.
+    """
     if key == -1: # -1 => no key pressed
         return
     global video_is_paused, video_is_fullscreen, video_is_ended, fullscreen_mode
@@ -61,7 +67,16 @@ def handle_pause_play() -> None:
         return
     return handle_pause_play() # recursively call until valid key is pressed
 
-def handle_fullscreen_mode_image(img, fullscreen_mode):
+def handle_fullscreen_mode_image(img: Image, fullscreen_mode: FullScreenMode) -> Image:
+    """Returns the appropriate image to display in fullscreen mode based on the current fullscreen mode.
+
+    Args:
+        img (Image): the original image
+        fullscreen_mode (FullScreenMode): current fullscreen mode to use
+
+    Returns:
+        Image: The image to be displayed
+    """
     if fullscreen_mode == FullScreenMode.ORIGINAL:
         pass
     elif fullscreen_mode == FullScreenMode.GRAYSCALE:
@@ -72,16 +87,30 @@ def handle_fullscreen_mode_image(img, fullscreen_mode):
         img = utils.edge_detect(img, DEFAULT_CANNY_MIN_THRESHOLD, DEFAULT_CANNY_MAX_THRESHOLD)
     return utils.get_fullscreen_image(img, DEFAULT_GRID_COLS, DEFAULT_GRID_ROWS)
 
-def get_frames_offset(fps):
+def get_frames_offset(fps: float):
+    """Used to calculate the number of frames to offset by when rewinding or fast forwarding.
+
+    Args:
+        fps (float): Frames per second
+
+    Returns:
+        int: Number of frames to offset by when rewinding or fast forwarding
+    """
     return int(fps * DEFAULT_REWIND_FAST_FORWARD_SECONDS)
 
 def start() -> None:
+    """Prints welcome message.
+    """
     print("-" * 20)
     print("Welcome to Devansh's Video Manipulation System!")
     print("-" * 20)
 
-# main video manipulation loop
-def process_video(video_path = DEFAULT_VIDEO_PATH) -> None:
+def process_video(video_path: str = DEFAULT_VIDEO_PATH) -> None:
+    """Main video manipulation loop.
+
+    Args:
+        video_path (str, optional): The path to the video file to be processed. Defaults to DEFAULT_VIDEO_PATH.
+    """
     cap = cv2.VideoCapture(video_path)
     logging.info("Video opened successfully.")
     fps: float = cap.get(cv2.CAP_PROP_FPS)

@@ -23,6 +23,7 @@ class Options(Enum):
     FULLSCREEN_BLUR = ord('3')
     FULLSCREEN_EDGE_DETECT = ord('4')
 
+# define fullscreen modes
 class FullScreenMode(Enum):
     ORIGINAL = 0
     GRAYSCALE = 1
